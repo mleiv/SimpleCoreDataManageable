@@ -273,6 +273,14 @@ extension SimpleCoreDataManageable {
             
             autoreleasepool {
                 if let coreItem = moc.object(with: item.objectID) as? T {
+                    // CAUTION: anything you do here *must* use the same context, 
+                    // so if you are setting up relationships, create a new SimpleCoreDataManager 
+                    // and use that to do any fetching/saving:
+                    //
+                    //     let localManager = SimpleCoreDataManager(context: coreItem.managedObjectContext)
+                    //     coreItem.otherEntity = OtherEntity.get(coreDataManager: localManager) {
+                    //         fetchRequest.predicate = NSPredicate(format: "(%K == %@)", #keyPath(OtherEntity.id), lookupId)
+                    //     }
                     setChangedValues(coreItem)
                 }
             }
