@@ -157,7 +157,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
         setInitialValues: @escaping SetAdditionalColumnsClosure<T>
     ) -> T? {
         let manager = coreDataManager ?? defaultCoreDataManager
-        let one: T? = manager.createOne(coreDataEntityName: Self.coreDataEntityName, setInitialValues: setInitialValues)
+        let one: T? = manager.createOne(setInitialValues: setInitialValues)
         return one
     }
     

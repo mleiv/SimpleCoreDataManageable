@@ -122,7 +122,6 @@ extension SimpleCoreDataManageable {
         let moc = persistentContainer.viewContext
         moc.performAndWait {
             do {
-                print(moc.hasChanges)
                 // save if changes found
                 if moc.hasChanges {
                     try moc.save()
@@ -221,7 +220,6 @@ extension SimpleCoreDataManageable {
     
     /// Creates a new row of CoreData and returns a SimpleCoreDataStorable object.
     public func createOne<T: NSManagedObject>(
-        coreDataEntityName: String,
         setInitialValues: @escaping SetAdditionalColumnsClosure<T> = { _ in }
     ) -> T? {
         let moc = context
@@ -233,12 +231,7 @@ extension SimpleCoreDataManageable {
             moc.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
             
             autoreleasepool {
-//                let coreItem = NSEntityDescription.insertNewObject(forEntityName: T.coreDataEntityName, into: moc)
-                guard let coreItem = NSEntityDescription.insertNewObject(forEntityName: coreDataEntityName, into: moc) as? T else {
-//                    print("Error: could not create new row of type \(T.coreDataEntityName)")
-                    print("Error: could not create new row of type \(T.self)")
-                    return
-                }
+                let coreItem = T(context: moc)
                 setInitialValues(coreItem)
                 print(coreItem)
                 result = coreItem
