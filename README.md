@@ -21,7 +21,7 @@ struct SimpleCoreDataManager: SimpleCoreDataManageable {
     public static var current: SimpleCoreDataManageable = SimpleCoreDataManager(storeName: defaultStoreName)
     
     public static var isConfineToMemoryStore: Bool = false // set to true for testing
-    public static var isManageMigrations: Bool = true // we manage migrations
+    public static var isManageMigrations: Bool = false // automatic migrations
     
     public let storeName: String
     public let persistentContainer: NSPersistentContainer
