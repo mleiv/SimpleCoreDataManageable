@@ -14,18 +14,38 @@ extension Person: SimpleCoreDataStorable {
 
     public static var coreDataEntityName: String { return "Person" }
     
-    public static var defaultCoreDataManager: SimpleCoreDataManageable { return SimpleCoreDataManager.current }
+    public static var defaultManager: SimpleCoreDataManageable { return SimpleCoreDataManager.current }
     
-    public static func create() -> Person? {
-        return Person.create(setInitialValues: { (person: Person) in
+    public static func create(
+        from manager: SimpleCoreDataManageable? = nil
+    ) -> Person? {
+        return Person.create(from: manager) { (person: Person) in
             person.id = "\(UUID())"
             person.name = "Unknown"
-        })
+        }
     }
     
-    public static func get(id: String) -> Person? {
-        return Person.get { (fetchRequest: NSFetchRequest<Person>) in
+    public static func get(
+        id: String,
+        from manager: SimpleCoreDataManageable? = nil
+    ) -> Person? {
+        return Person.get(from: manager) { (fetchRequest: NSFetchRequest<Person>) in
             fetchRequest.predicate = NSPredicate(format: "(%K == %@)", #keyPath(Person.id), id)
         }
+    }
+    public static func get(
+        name: String,
+        from manager: SimpleCoreDataManageable? = nil
+    ) -> Person? {
+        return Person.get(from: manager) { (fetchRequest: NSFetchRequest<Person>) in
+            fetchRequest.predicate = NSPredicate(format: "(%K == %@)", #keyPath(Person.name), name)
+        }
+    }
+}
+
+// MARK: Sorting
+extension Person {
+    static func sort(_ a: Person, b: Person) -> Bool {
+        return (a.name ?? "").localizedCaseInsensitiveCompare(b.name ?? "") == .orderedAscending // handle accented characters
     }
 }

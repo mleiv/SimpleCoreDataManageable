@@ -7,10 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B12172661E5A688100F04370 /* PersonCRUDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12172641E5A688100F04370 /* PersonCRUDTests.swift */; };
+		B12172671E5A688100F04370 /* SandboxedPersonCRUDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12172651E5A688100F04370 /* SandboxedPersonCRUDTests.swift */; };
 		B1AE70061E58DCA400ACC9CF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AE70051E58DCA400ACC9CF /* AppDelegate.swift */; };
 		B1AE70101E58DCA400ACC9CF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1AE700F1E58DCA400ACC9CF /* Assets.xcassets */; };
 		B1AE70131E58DCA400ACC9CF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B1AE70111E58DCA400ACC9CF /* LaunchScreen.storyboard */; };
-		B1AE701E1E58DCA400ACC9CF /* SimpleCoreDataManagerDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AE701D1E58DCA400ACC9CF /* SimpleCoreDataManagerDemoTests.swift */; };
 		B1AE704F1E58DEB300ACC9CF /* SimpleCoreDataManageable.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AE70411E58DEB300ACC9CF /* SimpleCoreDataManageable.swift */; };
 		B1AE70501E58DEB300ACC9CF /* SimpleCoreDataStorable.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AE70421E58DEB300ACC9CF /* SimpleCoreDataStorable.swift */; };
 		B1AE70521E58DEB300ACC9CF /* SimpleCoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1AE70441E58DEB300ACC9CF /* SimpleCoreDataManager.swift */; };
@@ -37,13 +38,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B12172641E5A688100F04370 /* PersonCRUDTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PersonCRUDTests.swift; sourceTree = "<group>"; };
+		B12172651E5A688100F04370 /* SandboxedPersonCRUDTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SandboxedPersonCRUDTests.swift; sourceTree = "<group>"; };
 		B1AE70021E58DCA400ACC9CF /* SimpleCoreDataManagerDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleCoreDataManagerDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1AE70051E58DCA400ACC9CF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B1AE700F1E58DCA400ACC9CF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1AE70121E58DCA400ACC9CF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B1AE70141E58DCA400ACC9CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B1AE70191E58DCA400ACC9CF /* SimpleCoreDataManagerDemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimpleCoreDataManagerDemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		B1AE701D1E58DCA400ACC9CF /* SimpleCoreDataManagerDemoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleCoreDataManagerDemoTests.swift; sourceTree = "<group>"; };
 		B1AE701F1E58DCA400ACC9CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B1AE70411E58DEB300ACC9CF /* SimpleCoreDataManageable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimpleCoreDataManageable.swift; sourceTree = "<group>"; };
 		B1AE70421E58DEB300ACC9CF /* SimpleCoreDataStorable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimpleCoreDataStorable.swift; sourceTree = "<group>"; };
@@ -78,6 +80,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B12172631E5A688100F04370 /* Person */ = {
+			isa = PBXGroup;
+			children = (
+				B12172641E5A688100F04370 /* PersonCRUDTests.swift */,
+				B12172651E5A688100F04370 /* SandboxedPersonCRUDTests.swift */,
+			);
+			path = Person;
+			sourceTree = "<group>";
+		};
 		B1AE6FF91E58DCA400ACC9CF = {
 			isa = PBXGroup;
 			children = (
@@ -113,7 +124,7 @@
 		B1AE701C1E58DCA400ACC9CF /* SimpleCoreDataManagerDemoTests */ = {
 			isa = PBXGroup;
 			children = (
-				B1AE701D1E58DCA400ACC9CF /* SimpleCoreDataManagerDemoTests.swift */,
+				B12172631E5A688100F04370 /* Person */,
 				B1AE701F1E58DCA400ACC9CF /* Info.plist */,
 			);
 			path = SimpleCoreDataManagerDemoTests;
@@ -308,7 +319,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B1AE701E1E58DCA400ACC9CF /* SimpleCoreDataManagerDemoTests.swift in Sources */,
+				B12172671E5A688100F04370 /* SandboxedPersonCRUDTests.swift in Sources */,
+				B12172661E5A688100F04370 /* PersonCRUDTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

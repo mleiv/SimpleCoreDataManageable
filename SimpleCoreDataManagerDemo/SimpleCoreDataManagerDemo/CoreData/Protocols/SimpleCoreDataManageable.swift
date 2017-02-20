@@ -21,8 +21,6 @@ public protocol SimpleCoreDataManageable {
     /// A static core data container for easy/efficient access.
     /// FYI, this is only created when asked for.
     static var current: SimpleCoreDataManageable { get }
-    /// Prevents any file saves - useful for testing.
-    static var isConfineToMemoryStore: Bool { get }
     /// Prevents any automatic migrations - useful for heavy migrations.
     static var isManageMigrations: Bool { get }
     /// The store name of the current persistent store container.
@@ -32,7 +30,7 @@ public protocol SimpleCoreDataManageable {
     /// Override the default context - useful when doing save/fetch in background.
     var specificContext: NSManagedObjectContext? { get }
     /// Implement this using the sample below, because protocols can't do this.
-    init(storeName: String?, context: NSManagedObjectContext?)
+    init(storeName: String?, context: NSManagedObjectContext?, isConfineToMemoryStore: Bool)
     
 //MARK: Already implemented:
     
@@ -47,19 +45,19 @@ extension SimpleCoreDataManageable {
     
     public var context: NSManagedObjectContext { return specificContext ?? persistentContainer.viewContext }
     
-    public init(storeName: String) {
-        self.init(storeName: storeName, context: nil)
+    public init(storeName: String, isConfineToMemoryStore: Bool = false) {
+        self.init(storeName: storeName, context: nil, isConfineToMemoryStore: isConfineToMemoryStore)
     }
     public init(context: NSManagedObjectContext?) {
-        self.init(storeName: nil, context: context)
+        self.init(storeName: nil, context: context, isConfineToMemoryStore: false)
     }
 //    // implement the following:
-//    public init(storeName: String?, context: NSManagedObjectContext?) {
+//    public init(storeName: String?, context: NSManagedObjectContext?, isConfineToMemoryStore: Bool) {
 //        self.storeName = storeName ?? AppDelegate.coreDataStoreName
 //        self.specificContext = context
 //        if let storeName = storeName {
 //            self.persistentContainer = NSPersistentContainer(name: storeName)
-//            initContainer()
+//            initContainer(isConfineToMemoryStore: isConfineToMemoryStore)
 //        } else {
 //            persistentContainer = CoreDataManager.current.persistentContainer
 //        }
@@ -67,8 +65,7 @@ extension SimpleCoreDataManageable {
     
     /// Configure the persistent container.
     /// Also runs any manual migrations.
-    public func initContainer() {
-        let isConfineToMemoryStore = Self.isConfineToMemoryStore
+    public func initContainer(isConfineToMemoryStore: Bool = false) {
         let isManageMigrations = Self.isManageMigrations
         
         // find our persistent store file
@@ -128,7 +125,7 @@ extension SimpleCoreDataManageable {
                 }
             } catch {
                 // this sucks, but not fatal IMO
-                print("Unresolved error \(error)")
+                print("Failed to save context: \(error)")
             }
         }
     }
@@ -148,7 +145,6 @@ extension SimpleCoreDataManageable {
                     result = item
                 }
             } catch let fetchError as NSError {
-//                print("Error: get failed for \(T.coreDataEntityName): \(fetchError)")
                 print("Error: get failed for \(T.self): \(fetchError)")
             }
         }
@@ -167,7 +163,6 @@ extension SimpleCoreDataManageable {
             do {
                 result = try fetchRequest.execute()
             } catch let fetchError as NSError {
-//                print("Error: getAll failed for \(T.coreDataEntityName): \(fetchError)")
                 print("Error: getAll failed: \(fetchError)")
             }
         }
@@ -187,7 +182,6 @@ extension SimpleCoreDataManageable {
             do {
                 result = try moc.count(for: fetchRequest)
             } catch let countError as NSError {
-//                print("Error: getCount failed for \(T.coreDataEntityName): \(countError)")
                 print("Error: getCount failed for \(T.self): \(countError)")
             }
         }
@@ -211,7 +205,6 @@ extension SimpleCoreDataManageable {
             try controller.performFetch()
             return controller
         } catch let fetchError as NSError {
-//            print("Error: getAllFetchedResults failed for \(T.coreDataEntityName): \(fetchError)")
             print("Error: getAllFetchedResults failed for \(T.self): \(fetchError)")
         }
         
@@ -233,14 +226,12 @@ extension SimpleCoreDataManageable {
             autoreleasepool {
                 let coreItem = T(context: moc)
                 setInitialValues(coreItem)
-                print(coreItem)
                 result = coreItem
             }
             
             do {
                 try moc.save()
             } catch let createError as NSError {
-//                print("Error: create failed for \(T.coreDataEntityName): \(createError)")
                 print("Error: create failed for \(T.self): \(createError)")
                 result = nil
             }
@@ -271,7 +262,7 @@ extension SimpleCoreDataManageable {
                     // and use that to do any fetching/saving:
                     //
                     //     let localManager = SimpleCoreDataManager(context: coreItem.managedObjectContext)
-                    //     coreItem.otherEntity = OtherEntity.get(coreDataManager: localManager) {
+                    //     coreItem.otherEntity = OtherEntity.get(with: localManager) {
                     //         fetchRequest.predicate = NSPredicate(format: "(%K == %@)", #keyPath(OtherEntity.id), lookupId)
                     //     }
                     setChangedValues(coreItem)
@@ -282,7 +273,6 @@ extension SimpleCoreDataManageable {
                 try moc.save()
                 result = true
             } catch let saveError as NSError {
-//                print("Error: save failed for \(T.coreDataEntityName): \(saveError)")
                 print("Error: save failed for \(T.self): \(saveError)")
             }
         }
@@ -294,27 +284,9 @@ extension SimpleCoreDataManageable {
     public func deleteOne<T: NSManagedObject>(
         item: T
     ) -> Bool {
-        var result: Bool = false
-        let waitForEndTask = DispatchWorkItem() {} // semaphore flag
-        persistentContainer.performBackgroundTask { moc in
-            defer { waitForEndTask.perform() }
-            moc.automaticallyMergesChangesFromParent = true
-            moc.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
-            autoreleasepool {
-                let coreItem = moc.object(with: item.objectID)
-                moc.delete(coreItem)
-            }
-            
-            do {
-                try moc.save()
-                result = true
-            } catch let deleteError as NSError{
-//                print("Error: delete failed for \(T.coreDataEntityName): \(deleteError)")
-                print("Error: delete failed for \(T.self): \(deleteError)")
-            }
+        return deleteAll(itemType: T.self) { fetchRequest in
+            fetchRequest.predicate = NSPredicate(format: "(%K == %@)", #keyPath(NSManagedObject.objectID), item.objectID)
         }
-        waitForEndTask.wait()
-        return result
     }
     
     /// Remove all rows of an entity matching restrictions.
@@ -322,6 +294,9 @@ extension SimpleCoreDataManageable {
         itemType: T.Type,
         alterFetchRequest: @escaping AlterFetchRequestClosure<T>
     ) -> Bool {
+        guard persistentContainer.persistentStoreDescriptions.first?.type != NSInMemoryStoreType else {
+            return tediousManualDelete(itemType: itemType, alterFetchRequest: alterFetchRequest)
+        }
         var result: Bool = false
         let waitForEndTask = DispatchWorkItem() {} // semaphore flag
         persistentContainer.performBackgroundTask { moc in
@@ -338,7 +313,42 @@ extension SimpleCoreDataManageable {
                 try moc.save()
                 result = true
             } catch let deleteError as NSError {
-//                print("Error: deleteAll failed for \(T.coreDataEntityName): \(deleteError)")
+                print("Error: deleteAll failed for \(T.self): \(deleteError)")
+            }
+        }
+        waitForEndTask.wait()
+        return result
+    }
+    
+    private func tediousManualDelete<T: NSManagedObject>(
+        itemType: T.Type,
+        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+    ) -> Bool {
+        var result: Bool = false
+        let waitForEndTask = DispatchWorkItem() {} // semaphore flag
+        persistentContainer.performBackgroundTask { moc in
+            defer { waitForEndTask.perform() }
+            moc.automaticallyMergesChangesFromParent = true
+            moc.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+            
+            guard let fetchRequest = T.fetchRequest() as? NSFetchRequest<T> else { return }
+            fetchRequest.includesPropertyValues = false
+            alterFetchRequest(fetchRequest)
+            
+            autoreleasepool {
+                do {
+                    for item in try fetchRequest.execute() {
+                        moc.delete(item)
+                    }
+                } catch let deleteError as NSError {
+                    print("Error: delete row failed for \(T.self): \(deleteError)")
+                }
+            }
+            
+            do {
+                try moc.save()
+                result = true
+            } catch let deleteError as NSError {
                 print("Error: deleteAll failed for \(T.self): \(deleteError)")
             }
         }

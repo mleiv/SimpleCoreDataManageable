@@ -8,6 +8,9 @@ There are still some missing pieces (like: I can't declare a generic type confor
 
 In the end, I prefer my struct wrappers because I hate reference objects and the way they are mutated underneath you. Having a static copy that I save and update when and where I want to is worth any extra labor, and I think until Apple gets onboard with functional Core Data, this will just be an interesting side experiment and not my primary Core Data library.
 
+## Recommendations
+
+If you are looking for a Swift core data stack to use in your app, rather than an example of iOS 10 functionality, https://github.com/tadija/AERecord looks nice IMO.
 
 ## Examples
 

@@ -12,20 +12,23 @@ import CoreData
 struct SimpleCoreDataManager: SimpleCoreDataManageable {
     public static let defaultStoreName = "SimpleCoreDataManagerDemo"
     public static var current: SimpleCoreDataManageable = SimpleCoreDataManager(storeName: defaultStoreName)
-    
-    public static var isConfineToMemoryStore: Bool = false // set to true for testing
+
     public static var isManageMigrations: Bool = false // automatic migrations
     
     public let storeName: String
     public let persistentContainer: NSPersistentContainer
     public let specificContext: NSManagedObjectContext?
     
-    public init(storeName: String?, context: NSManagedObjectContext?) {
+    public init() {
+        self.init(storeName: SimpleCoreDataManager.defaultStoreName)
+    }
+    
+    public init(storeName: String?, context: NSManagedObjectContext?, isConfineToMemoryStore: Bool) {
         self.storeName = storeName ?? SimpleCoreDataManager.defaultStoreName
         self.specificContext = context
         if let storeName = storeName {
             self.persistentContainer = NSPersistentContainer(name: storeName)
-            initContainer()
+            initContainer(isConfineToMemoryStore: isConfineToMemoryStore)
         } else {
             persistentContainer = SimpleCoreDataManager.current.persistentContainer
         }

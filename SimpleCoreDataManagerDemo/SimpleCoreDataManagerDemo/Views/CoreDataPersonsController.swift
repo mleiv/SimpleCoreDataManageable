@@ -23,7 +23,7 @@ class CoreDataPersonsController: UITableViewController {
     }
     
     func loadData() {
-        persons = Person.getAll()
+        persons = Person.getAll().sorted(by: Person.sort)
         // if # of persons is high, hook up a fetch results controller for better response time
         tableView.reloadData()
     }
