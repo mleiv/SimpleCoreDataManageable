@@ -65,11 +65,6 @@ public protocol SimpleCoreDataStorable: class {
         from manager: SimpleCoreDataManageable?,
         alterFetchRequest: @escaping AlterFetchRequestClosure<T>
     ) -> Bool
-    
-    /// Deletes everything from core data entity.
-    static func truncateTable(
-        from manager: SimpleCoreDataManageable?
-    ) -> Bool
 }
 
 extension SimpleCoreDataStorable {
@@ -120,7 +115,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
         alterFetchRequest: @escaping AlterFetchRequestClosure<T>
     ) -> Int {
         let manager = manager ?? defaultManager
-        return manager.getCount(alterFetchRequest: alterFetchRequest, itemType: T.self)
+        return manager.getCount(alterFetchRequest: alterFetchRequest)
     }
     
     /// Convenience version of getCount:manager:alterFetchRequest (manager not required).
@@ -233,7 +228,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
         alterFetchRequest: @escaping AlterFetchRequestClosure<T>
     ) -> Bool {
         let manager = manager ?? defaultManager
-        return manager.deleteAll(itemType: T.self, alterFetchRequest: alterFetchRequest)
+        return manager.deleteAll(alterFetchRequest: alterFetchRequest)
     }
     
     /// Convenience version of deleteAll:manager:alterFetchRequest (manager not required).
@@ -247,19 +242,5 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     public static func deleteAll() -> Bool {
         let defaultClosure: AlterFetchRequestClosure<Self> = { _ in }
         return deleteAll(from: nil, alterFetchRequest: defaultClosure)
-    }
-    
-    /// Protocol conformance.
-    /// Deletes everything from core data entity.
-    public static func truncateTable(
-        from manager: SimpleCoreDataManageable?
-    ) -> Bool {
-        let manager = manager ?? defaultManager
-        return manager.truncateTable(itemType: Self.self)
-    }
-    
-    /// Convenience version of truncateTable:manager (no parameters required).
-    public static func truncateTable() -> Bool {
-        return truncateTable(from: nil)
     }
 }
