@@ -23,7 +23,7 @@ class PersonCRUDTests: XCTestCase {
         super.tearDown()
     }
     
-    private func getSandboxedManager() -> SimpleCoreDataManageable {
+    private func getSandboxedManager() -> SimpleCoreDataManager {
         return SimpleCoreDataManager(storeName: SimpleCoreDataManager.defaultStoreName, isConfineToMemoryStore: true)
     }
     

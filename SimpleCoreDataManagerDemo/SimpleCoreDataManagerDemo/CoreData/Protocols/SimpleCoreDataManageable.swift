@@ -15,11 +15,10 @@ public protocol SimpleCoreDataManageable {
 
 //MARK: Required:
 
-    /// A static core data container for easy/efficient access.
-    /// FYI, this is only created when asked for.
-    static var current: SimpleCoreDataManageable { get }
     /// Prevents any automatic migrations - useful for heavy migrations.
     static var isManageMigrations: Bool { get }
+    /// A flag for the type of store.
+    var isConfinedToMemoryStore: Bool { get }
     /// The store name of the current persistent store container.
     var storeName: String { get }
     /// This is managed for you - just declare it.
@@ -33,7 +32,7 @@ public protocol SimpleCoreDataManageable {
     
     func runMigrations(storeUrl: URL)
     
-    /// Save the primary context to file. Call this before exiting app.
+    /// Save the primary context to file. Call this before exiting App.current.
     func save()
     
     /// Retrieve single row with criteria closure.
@@ -83,6 +82,14 @@ public protocol SimpleCoreDataManageable {
 
 // MARK: Core data initialization functions
 extension SimpleCoreDataManageable {
+
+    static var isCoreDataInaccessible: Bool {
+        #if TARGET_INTERFACE_BUILDER
+            return true
+        #else
+            return false
+        #endif
+    }
     
     public var context: NSManagedObjectContext { return specificContext ?? persistentContainer.viewContext }
     
@@ -95,7 +102,8 @@ extension SimpleCoreDataManageable {
     
 //    // implement the following:
 //    public init(storeName: String?, context: NSManagedObjectContext?, isConfineToMemoryStore: Bool) {
-//        self.storeName = storeName ?? AppDelegate.coreDataStoreName
+//        self.isConfinedToMemoryStore = isConfineToMemoryStore
+//        self.storeName = storeName ?? CoreDataManager.defaultStoreName
 //        self.specificContext = context
 //        if let storeName = storeName {
 //            self.persistentContainer = NSPersistentContainer(name: storeName)
@@ -108,6 +116,9 @@ extension SimpleCoreDataManageable {
     /// Configure the persistent container.
     /// Also runs any manual migrations.
     public func initContainer(isConfineToMemoryStore: Bool = false) {
+    
+        guard !Self.isCoreDataInaccessible else { return }
+        
         let isManageMigrations = Self.isManageMigrations
         
         // find our persistent store file
@@ -157,11 +168,17 @@ extension SimpleCoreDataManageable {
 
 // MARK: Core data content functions
 extension SimpleCoreDataManageable {
+    /// The closure type for editing fetch requests.
     public typealias AlterFetchRequest<T: NSManagedObject> = ((NSFetchRequest<T>)->Void)
+    
+    /// The closure type for editing fetched entity objects.
     public typealias SetAdditionalColumns<T: NSManagedObject> = ((T)->Void)
     
-    /// Save the primary context to file. Call this before exiting app.
+    public typealias TransformEntity<T: NSManagedObject, U> = ((T)->U?)
+    
+    /// Save the primary context to file. Call this before exiting App.current.
     public func save() {
+        guard !Self.isCoreDataInaccessible else { return }
         let moc = persistentContainer.viewContext
         moc.performAndWait {
             do {
@@ -180,9 +197,9 @@ extension SimpleCoreDataManageable {
     public func getOne<T: NSManagedObject>(
         alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> T? {
-        var result: T?
+        guard !Self.isCoreDataInaccessible else { return nil }
         let moc = context
-        print(context)
+        var result: T?
         moc.performAndWait {
             guard let fetchRequest = T.fetchRequest() as? NSFetchRequest<T> else { return }
             alterFetchRequest(fetchRequest)
@@ -200,10 +217,36 @@ extension SimpleCoreDataManageable {
         return result
     }
     
+    /// Retrieve multiple rows with criteria closure, and transform them to another data type.
+    public func getOneTransformed<T: NSManagedObject, U>(
+        transformEntity: @escaping TransformEntity<T,U>,
+        alterFetchRequest: @escaping AlterFetchRequest<T>
+    ) -> U? {
+        guard !Self.isCoreDataInaccessible else { return nil }
+        let moc = context
+        var result: U?
+        moc.performAndWait {
+            guard let fetchRequest = T.fetchRequest() as? NSFetchRequest<T> else { return }
+            alterFetchRequest(fetchRequest)
+            fetchRequest.fetchLimit = 1
+            autoreleasepool {
+                do {
+                    if let item = try fetchRequest.execute().first {
+                        result = transformEntity(item)
+                    }
+                } catch let fetchError as NSError {
+                    print("Error: get failed for \(T.self): \(fetchError)")
+                }
+            }
+        }
+        return result
+    }
+    
     /// Retrieve multiple rows with criteria closure.
     public func getAll<T: NSManagedObject>(
         alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> [T] {
+        guard !Self.isCoreDataInaccessible else { return [] }
         let moc = context
         var result: [T] = []
         moc.performAndWait { // performAndWait does not require autoreleasepool
@@ -218,10 +261,35 @@ extension SimpleCoreDataManageable {
         return result
     }
     
+    /// Retrieve multiple rows with criteria closure, and transform them to another data type.
+    ///
+    /// WARNING: Do not perform any core data action in transformEntity.
+    ///   Just retrieve your values and do stuff with them later, or it will deadlock!
+    public func getAllTransformed<T: NSManagedObject, U>(
+        transformEntity: @escaping TransformEntity<T,U>,
+        alterFetchRequest: @escaping AlterFetchRequest<T>
+    ) -> [U] {
+        guard !Self.isCoreDataInaccessible else { return [] }
+        let moc = context
+        var result: [U] = []
+        moc.performAndWait { // performAndWait does not require autoreleasepool
+            guard let fetchRequest = T.fetchRequest() as? NSFetchRequest<T> else { return }
+            alterFetchRequest(fetchRequest)
+            do {
+                let items: [T] = try fetchRequest.execute()
+                result = items.flatMap { transformEntity($0) }
+            } catch let fetchError as NSError {
+                print("Error: getAllTransformed failed: \(fetchError)")
+            }
+        }
+        return result
+    }
+    
     /// Retrieve a count of matching entities
     public func getCount<T: NSManagedObject>(
         alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Int {
+        guard !Self.isCoreDataInaccessible else { return 0 }
         let moc = context
         var result = 0
         moc.performAndWait { // performAndWait does not require autoreleasepool
@@ -242,6 +310,7 @@ extension SimpleCoreDataManageable {
         sectionKey: String?,
         cacheName: String?
     ) -> NSFetchedResultsController<T>? {
+        guard !Self.isCoreDataInaccessible else { return nil }
         let moc = context
         guard let fetchRequest = T.fetchRequest() as? NSFetchRequest<T> else { return nil }
         alterFetchRequest(fetchRequest)
@@ -262,6 +331,7 @@ extension SimpleCoreDataManageable {
     public func createOne<T: NSManagedObject>(
         setInitialValues: @escaping SetAdditionalColumns<T>
     ) -> T? {
+        guard !Self.isCoreDataInaccessible else { return nil }
         let moc = context
         var result: T?
         let waitForEndTask = DispatchWorkItem() {} // semaphore flag
@@ -295,6 +365,7 @@ extension SimpleCoreDataManageable {
         item: T,
         setChangedValues: @escaping SetAdditionalColumns<T>
     ) -> Bool {
+        guard !Self.isCoreDataInaccessible else { return false }
         var result: Bool = false
         let waitForEndTask = DispatchWorkItem() {} // semaphore flag
         persistentContainer.performBackgroundTask { moc in
@@ -340,6 +411,7 @@ extension SimpleCoreDataManageable {
     public func deleteAll<T: NSManagedObject>(
         alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Bool {
+        guard !Self.isCoreDataInaccessible else { return false }
         guard persistentContainer.persistentStoreDescriptions.first?.type != NSInMemoryStoreType else {
             return tediousManualDelete(alterFetchRequest: alterFetchRequest)
         }
