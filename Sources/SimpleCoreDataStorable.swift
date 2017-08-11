@@ -10,9 +10,9 @@
 
 import CoreData
 
-// https://bugs.swift.org/browse/SR-2359
-
 /// A protocol for describing that can be stored in core data using the CoreDataManager
+///
+/// TODO: Move NSManagedObject adherence up here when/if it is possible.
 public protocol SimpleCoreDataStorable: class {
 
 // MARK: Required
@@ -28,31 +28,31 @@ public protocol SimpleCoreDataStorable: class {
     /// Gets one matching item from core data.
     static func get<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> T?
     
     /// Get a count of matching items from core data
     static func getCount<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Int
 
     /// Gets all the matching items from core data.
     static func getAll<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> [T]
     
     /// Create a new item from core data.
     static func create<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        setInitialValues: @escaping SetAdditionalColumnsClosure<T>
+        setInitialValues: @escaping SetAdditionalColumns<T>
     ) -> T?
 
     /// Saves the item to core data.
     func saveChanges<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        setChangedValues: @escaping SetAdditionalColumnsClosure<T>
+        setChangedValues: @escaping SetAdditionalColumns<T>
     ) -> Bool
     
     /// Deletes the item from core data.
@@ -63,19 +63,13 @@ public protocol SimpleCoreDataStorable: class {
     /// Deletes all the items from core data.
     static func deleteAll<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
-    ) -> Bool
-    
-    /// Deletes everything from core data entity.
-    static func truncateTable(
-        from manager: SimpleCoreDataManageable?
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Bool
 }
 
 extension SimpleCoreDataStorable {
-
-    // Default implementation. Can be removed if we ever fix Class/Protocol conformance bug.
-    public static var coreDataEntityName: String { return "Unknown" }
+    public typealias AlterFetchRequest<T: NSManagedObject> = ((NSFetchRequest<T>)->Void)
+    public typealias SetAdditionalColumns<T: NSManagedObject> = ((T)->Void)
 }
 
 extension SimpleCoreDataStorable where Self: NSManagedObject {
@@ -89,14 +83,14 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// Gets one matching item from core data.
     public static func get<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> T? {
         return _get(from: manager, alterFetchRequest: alterFetchRequest)
     }
 
     /// Convenience version of get:manager:alterFetchRequest (no parameters required).
     public static func get<T: NSManagedObject>(
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> T? {
         return get(from: nil, alterFetchRequest: alterFetchRequest)
     }
@@ -106,7 +100,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// DO NOT OVERRIDE.
     public static func _get<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> T? {
         let manager = manager ?? defaultManager
         let one: T? = manager.getOne(alterFetchRequest: alterFetchRequest)
@@ -117,22 +111,22 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// Get a count of matching items from core data
     public static func getCount<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Int {
         let manager = manager ?? defaultManager
-        return manager.getCount(alterFetchRequest: alterFetchRequest, itemType: T.self)
+        return manager.getCount(alterFetchRequest: alterFetchRequest)
     }
     
     /// Convenience version of getCount:manager:alterFetchRequest (manager not required).
     public static func getCount<T: NSManagedObject>(
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Int {
         return getCount(from: nil, alterFetchRequest: alterFetchRequest)
     }
     
     /// Convenience version of getCount:manager:alterFetchRequest (no parameters required).
     public static func getCount() -> Int {
-        let defaultClosure: AlterFetchRequestClosure<Self> = { _ in }
+        let defaultClosure: AlterFetchRequest<Self> = { _ in }
         return getCount(from: nil, alterFetchRequest: defaultClosure)
     }
 
@@ -140,14 +134,14 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// Gets all the matching items from core data.
     public static func getAll<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> [T] {
         return _getAll(from: manager, alterFetchRequest: alterFetchRequest)
     }
     
     /// Convenience version of getAll:manager:alterFetchRequest (no parameters required).
     public static func getAll<T: NSManagedObject>(
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T> = { _ in }
+        alterFetchRequest: @escaping AlterFetchRequest<T> = { _ in }
     ) -> [T] {
         return getAll(from: nil, alterFetchRequest: alterFetchRequest)
     }
@@ -157,7 +151,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// DO NOT OVERRIDE.
     public static func _getAll<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable? = nil,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> [T] {
         let manager = manager ?? defaultManager
         let all: [T] = manager.getAll(alterFetchRequest: alterFetchRequest)
@@ -168,14 +162,14 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// Create a new item from core data.
     public static func create<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        setInitialValues: @escaping SetAdditionalColumnsClosure<T>
+        setInitialValues: @escaping SetAdditionalColumns<T>
     ) -> T? {
         return _create(from: manager, setInitialValues: setInitialValues)
     }
     
     /// Convenience version of create:manager:setInitialValues (manager not required).
     public static func create<T: NSManagedObject>(
-        setInitialValues: @escaping SetAdditionalColumnsClosure<T>
+        setInitialValues: @escaping SetAdditionalColumns<T>
     ) -> T? {
         return create(from: nil, setInitialValues: setInitialValues)
     }
@@ -185,7 +179,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// DO NOT OVERRIDE.
     public static func _create<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable? = nil,
-        setInitialValues: @escaping SetAdditionalColumnsClosure<T>
+        setInitialValues: @escaping SetAdditionalColumns<T>
     ) -> T? {
         let manager = manager ?? defaultManager
         let one: T? = manager.createOne(setInitialValues: setInitialValues)
@@ -196,7 +190,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// Saves the item to core data.
     public func saveChanges<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        setChangedValues: @escaping SetAdditionalColumnsClosure<T>
+        setChangedValues: @escaping SetAdditionalColumns<T>
     ) -> Bool {
         guard let item = self as? T else { return false }
         let manager = manager ?? defaultManager
@@ -206,7 +200,7 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     
     /// Convenience version of save:manager (no manager required).
     public func saveChanges<T: NSManagedObject>(
-        setChangedValues: @escaping SetAdditionalColumnsClosure<T>
+        setChangedValues: @escaping SetAdditionalColumns<T>
     ) -> Bool {
         return saveChanges(from: nil, setChangedValues: setChangedValues)
     }
@@ -230,36 +224,22 @@ extension SimpleCoreDataStorable where Self: NSManagedObject {
     /// Deletes all the items from core data.
     public static func deleteAll<T: NSManagedObject>(
         from manager: SimpleCoreDataManageable?,
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Bool {
         let manager = manager ?? defaultManager
-        return manager.deleteAll(itemType: T.self, alterFetchRequest: alterFetchRequest)
+        return manager.deleteAll(alterFetchRequest: alterFetchRequest)
     }
     
     /// Convenience version of deleteAll:manager:alterFetchRequest (manager not required).
     public static func deleteAll<T: NSManagedObject>(
-        alterFetchRequest: @escaping AlterFetchRequestClosure<T>
+        alterFetchRequest: @escaping AlterFetchRequest<T>
     ) -> Bool {
         return deleteAll(from: nil, alterFetchRequest: alterFetchRequest)
     }
     
     /// Convenience version of deleteAll:manager:alterFetchRequest (no parameters required).
     public static func deleteAll() -> Bool {
-        let defaultClosure: AlterFetchRequestClosure<Self> = { _ in }
+        let defaultClosure: AlterFetchRequest<Self> = { _ in }
         return deleteAll(from: nil, alterFetchRequest: defaultClosure)
-    }
-    
-    /// Protocol conformance.
-    /// Deletes everything from core data entity.
-    public static func truncateTable(
-        from manager: SimpleCoreDataManageable?
-    ) -> Bool {
-        let manager = manager ?? defaultManager
-        return manager.truncateTable(itemType: Self.self)
-    }
-    
-    /// Convenience version of truncateTable:manager (no parameters required).
-    public static func truncateTable() -> Bool {
-        return truncateTable(from: nil)
     }
 }

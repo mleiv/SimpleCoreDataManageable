@@ -1,6 +1,12 @@
 # SimpleCoreDataManageable
 
-**A simple protocol for iOS 10 Swift 3 Core Data interactions.**
+**A simple protocol for iOS 10 Swift 3+ Core Data interactions.**
+
+## News 2017-08-11
+
+I have added a new branch for Swift 4.0.
+
+## About
 
 I have been using protocols to manage my Swift struct SerializableData/Core Data wrappers for quite some time, but with the new iOS 10/Swift 3 options, I wanted to see what it was like using straight NSManagedObjects again.
 

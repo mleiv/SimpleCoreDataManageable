@@ -102,7 +102,8 @@ extension SimpleCoreDataManageable {
     
 //    // implement the following:
 //    public init(storeName: String?, context: NSManagedObjectContext?, isConfineToMemoryStore: Bool) {
-//        self.storeName = storeName ?? AppDelegate.coreDataStoreName
+//        self.isConfinedToMemoryStore = isConfineToMemoryStore
+//        self.storeName = storeName ?? CoreDataManager.defaultStoreName
 //        self.specificContext = context
 //        if let storeName = storeName {
 //            self.persistentContainer = NSPersistentContainer(name: storeName)
@@ -152,7 +153,7 @@ extension SimpleCoreDataManageable {
     
     /// Configure the primary context.
     public func initContext() {
-        print("Using persistent store: \(persistentContainer.persistentStoreCoordinator.persistentStores.first?.url)")
+        print("Using persistent store: \(String(describing: persistentContainer.persistentStoreCoordinator.persistentStores.first?.url))")
         let context = self.persistentContainer.viewContext
         context.automaticallyMergesChangesFromParent = true // not triggered w/o autoreleasepool
         context.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump

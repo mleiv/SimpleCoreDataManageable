@@ -10,9 +10,9 @@
 
 import CoreData
 
-// https://bugs.swift.org/browse/SR-2359
-
 /// A protocol for describing that can be stored in core data using the CoreDataManager
+///
+/// TODO: Move NSManagedObject adherence up here when/if it is possible.
 public protocol SimpleCoreDataStorable: class {
 
 // MARK: Required
@@ -67,9 +67,12 @@ public protocol SimpleCoreDataStorable: class {
     ) -> Bool
 }
 
-extension SimpleCoreDataStorable where Self: NSManagedObject {
+extension SimpleCoreDataStorable {
     public typealias AlterFetchRequest<T: NSManagedObject> = ((NSFetchRequest<T>)->Void)
     public typealias SetAdditionalColumns<T: NSManagedObject> = ((T)->Void)
+}
+
+extension SimpleCoreDataStorable where Self: NSManagedObject {
 
     /// Convenience - get the static version for easy instance reference.
     public var defaultManager: SimpleCoreDataManageable {
